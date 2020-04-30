@@ -5,9 +5,10 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.alibaba.fastjson.JSON;
 import com.sintef.asam.PrometheusSinkConnectorConfig;
+import com.sintef.asam.impl.cam.CAM;
 
-import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
 
 public class PrometheusService {
@@ -15,22 +16,27 @@ public class PrometheusService {
 
 	private HTTPServer server;
 	private PrometheusFactory factory;
-	
-	public PrometheusService(PrometheusSinkConnectorConfig props) throws IOException {	
+
+	public PrometheusFactory getFactory() {
+		return factory;
+	}
+
+	public PrometheusService(PrometheusSinkConnectorConfig props) throws IOException {
 		this(props.getPrometheusPort());
 	}
-	
+
 	private PrometheusService(int port) throws IOException {
 		factory = new PrometheusFactory();
 		server = new HTTPServer(port);
 	}
-	
-	public void process(String namespace, String subsystem, String name, long value) {
-		if (server == null || factory == null) return;
-		Gauge gauge = factory.createOrGetGauge(namespace, subsystem, name);
-		gauge.set(value);
+
+	public void process(String namespace, String json, Class<?> messageType) {
+		if (server == null || factory == null)
+			return;
+		final Message m = (Message) JSON.parseObject(json, messageType);
+		m.process(namespace, this);
 	}
-	
+
 	public void stop() {
 		factory.clean();
 		factory = null;
@@ -41,37 +47,52 @@ public class PrometheusService {
 			server = null;
 		}
 	}
-	
-	//FIXME: write a test
+
+	class Producer implements Runnable {
+
+		int baseID = 0;
+		PrometheusService service;
+
+		public Producer(int baseID, PrometheusService service) {
+			this.baseID = baseID;
+			this.service = service;
+		}
+
+		@Override
+		public void run() {
+			int i = 0;
+			while (!Thread.interrupted()) {
+				final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":"
+						+ (baseID + (i % 100)) + "}," + "\"cam\":{" + "\"speedValue\":" + (i % 80) + ","
+						+ "\"headingValue\":" + (i % 50) + "}" + "}";
+				System.out.println("data " + i + ": " + json);
+				service.process("cam", json, CAM.class);
+				i++;
+				/*
+				 * try { Thread.sleep(1); } catch (InterruptedException e) {
+				 * e.printStackTrace(); }
+				 */
+			}
+
+		}
+
+	}
+
+	// FIXME: write a test
 	public static void main(String args[]) {
-		PrometheusService s = null;
+		PrometheusService service = null;
 		try {
-			final PrometheusService service = new PrometheusService(8088);
-			s = service;
-			new Thread(new Runnable() {
-				
-				int i = 0;
-				
-				@Override
-				public void run() {
-					while(!Thread.interrupted()) {
-						System.out.println("Exposing data " + i);
-						service.process("ns", "ss", "t", 25+i);
-						service.process("ns", "ss", "h", 50+i);
-						i++;
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-					service.stop();
-				}
-			}).start();
+			service = new PrometheusService(8088);
+			final int MAX_THREAD = 10;
+			for (int i = 0; i < MAX_THREAD; i++) {
+				final Producer p = service.new Producer(100 * i, service);
+				new Thread(p).start();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			s.stop();
+			if (service != null)
+				service.stop();
 		}
 	}
-	
+
 }

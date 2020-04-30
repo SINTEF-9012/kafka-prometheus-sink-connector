@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 public class PrometheusSinkConnector extends SinkConnector {
 
-	private static final Logger logger = LogManager.getLogger(PrometheusSinkConnector.class); 
+	private static final Logger logger = LogManager.getLogger(PrometheusSinkConnector.class);
 
 	private Map<String, String> configProperties;
 
@@ -28,7 +28,7 @@ public class PrometheusSinkConnector extends SinkConnector {
 		try {
 			configProperties = props;
 			new PrometheusSinkConnectorConfig(props);
-		} catch (ConfigException e) {  
+		} catch (ConfigException e) {
 			final String err = "Couldn't start PrometheusSinkConnector due to configuration error: " + e.getMessage();
 			logger.error(err);
 			System.err.println(err);
