@@ -68,10 +68,8 @@ public class PrometheusService {
 				System.out.println("data " + i + ": " + json);
 				service.process("cam", json, CAM.class);
 				i++;
-				/*
-				 * try { Thread.sleep(1); } catch (InterruptedException e) {
-				 * e.printStackTrace(); }
-				 */
+				try { Thread.sleep(25); } catch (InterruptedException e) { e.printStackTrace(); }
+				 
 			}
 
 		}
@@ -83,7 +81,7 @@ public class PrometheusService {
 		PrometheusService service = null;
 		try {
 			service = new PrometheusService(8088);
-			final int MAX_THREAD = 10;
+			final int MAX_THREAD = 50;
 			for (int i = 0; i < MAX_THREAD; i++) {
 				final Producer p = service.new Producer(100 * i, service);
 				new Thread(p).start();
