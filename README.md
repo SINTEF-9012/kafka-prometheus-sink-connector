@@ -88,11 +88,11 @@ where the response is an array with connectors by name.
 
 10. Then publish something to the test topic on the Kafka broker. Start a Kafka console producer in yet a new terminal window:
 ```
-"path-to-kafka"/kafka_2.13-2.4.1/bin/kafka-console-producer --broker-list 127.0.0.1:9092 --topic test 
+"path-to-kafka"/kafka_2.13-2.4.1/bin/kafka-console-producer --broker-list 127.0.0.1:9092 --topic test
 ```
 Type the following in the _kafka-console-producer_:
 ```
-{"ss": "mysubsystem", "ns":"mynamespace", "t":22, "h":25}
+{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}
 ```
 
 Note that the sink connector is made to receive JSON formatted messages. The JSON also needs to have a key/value pair where key is equal to the property `mqtt.connector.mqtt_topic_key`.

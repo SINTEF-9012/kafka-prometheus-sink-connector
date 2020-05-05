@@ -26,9 +26,9 @@ mkdir -p $LOG_DIR
 ##DEPLOYING PROMETHEUS
 cd $ROOT_DIR/src/main/docker
 echo "Building custom Docker image for Prometheus"
-docker build -t kafkaprom/prometheus . > /dev/null 2>&1
+sudo docker build -t kafkaprom/prometheus . > /dev/null 2>&1
 echo "Running custom Prometheus scrapping ${LOCAL_IP}:${ENDPOINT_PORT}"
-docker run -p 9090:9090 kafkaprom/prometheus 1s ${LOCAL_IP}:${ENDPOINT_PORT} > /dev/null 2>&1 &
+sudo docker run -p 9090:9090 kafkaprom/prometheus 1s ${LOCAL_IP}:${ENDPOINT_PORT} > /dev/null 2>&1 &
 
 ##STARTING KAFKA
 echo "Starting Zookeeper..."
@@ -62,5 +62,16 @@ echo "Deploying connector for topic(s): ${TOPICS}"
 echo '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}'
 curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
 sleep 5
-echo "Check that connector is deployed"
-curl -s -X GET 'Content-Type: application/json' http://127.0.0.1:19005/connectors/${CONNECTOR_NAME}
+# echo "Check that connector is deployed"
+# curl -s -X GET 'Content-Type: application/json' http://127.0.0.1:19005/connectors/${CONNECTOR_NAME}
+
+echo "Just pushing one piece of data to initialize local HTTP endpoint..."
+echo '{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test
+
+echo "Opening the local HTTP endpoint (http://${LOCAL_IP}:${ENDPOINT_PORT}) in your web browser..."
+xdg-open http://${LOCAL_IP}:${ENDPOINT_PORT}
+
+sleep 5
+
+echo "Opening the Prometheus GUI (http://${LOCAL_IP}:9090) in your web browser..."
+xdg-open http://${LOCAL_IP}:9090
