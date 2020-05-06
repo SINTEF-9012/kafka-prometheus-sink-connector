@@ -28,7 +28,7 @@ cd $ROOT_DIR/src/main/docker
 echo "Building custom Docker image for Prometheus"
 sudo docker build -t kafkaprom/prometheus . > /dev/null 2>&1
 echo "Running custom Prometheus scrapping ${LOCAL_IP}:${ENDPOINT_PORT}"
-sudo docker run -p 9090:9090 kafkaprom/prometheus 1s ${LOCAL_IP}:${ENDPOINT_PORT} > /dev/null 2>&1 &
+sudo docker run -p 9090:9090 kafkaprom/prometheus 1s ${LOCAL_IP}:${ENDPOINT_PORT} ${LOCAL_IP}:$((ENDPOINT_PORT + 1)) ${LOCAL_IP}:$((ENDPOINT_PORT + 2)) ${LOCAL_IP}:$((ENDPOINT_PORT + 3))> /dev/null 2>&1 &
 
 ##STARTING KAFKA
 echo "Starting Zookeeper..."
@@ -45,13 +45,13 @@ if [[ $# -gt 0 ]] ; then
   TOPICS=${@}
   while [ "$1" != "" ]; do
     echo "  Creating topic ${1}"
-    $KAFKA/kafka-topics.sh --create --bootstrap-server 127.0.0.1:9092 --replication-factor 1 --partitions 1 --topic $1 >> $LOG_DIR/kafkatopics.log 2>&1
+    $KAFKA/kafka-topics.sh --create --bootstrap-server 127.0.0.1:9092 --replication-factor 1 --partitions 4 --topic $1 >> $LOG_DIR/kafkatopics.log 2>&1
     shift
   done
 else
   echo "No topic passed as argument to this script. Creating a 'test' topic"
   TOPICS="test"
-  $KAFKA/kafka-topics.sh --create --bootstrap-server 127.0.0.1:9092 --replication-factor 1 --partitions 1 --topic test >> $LOG_DIR/kafkatopics.log 2>&1
+  $KAFKA/kafka-topics.sh --create --bootstrap-server 127.0.0.1:9092 --replication-factor 1 --partitions 4 --topic test >> $LOG_DIR/kafkatopics.log 2>&1
 fi
 
 ##DEPLOYING CONNECTOR TO KAFKA CONNECT
@@ -61,19 +61,25 @@ sleep 15
 echo "Deploying connector for topic(s): ${TOPICS}"
 echo '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}'
 # curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
-curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter","key.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
+curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"4","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter", "key.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
 sleep 5
 # echo "Check that connector is deployed"
 # curl -s -X GET 'Content-Type: application/json' http://127.0.0.1:19005/connectors/${CONNECTOR_NAME}
 
-echo "Just pushing one piece of data to initialize local HTTP endpoint..."
-echo '0::{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test --property "parse.key=true" --property "key.separator=::"
+echo "Just pushing some data to initialize local HTTP endpoint(s)..."
 # echo '{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test
+echo '0;{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test --property "parse.key=true" --property "key.separator=;" --property "key.serializer=org.apache.kafka.common.serialization.StringSerialiazer"
+echo '1;{"header": {"protocolVersion":1, "messageID":0, "stationID":1}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test --property "parse.key=true" --property "key.separator=;" --property "key.serializer=org.apache.kafka.common.serialization.StringSerialiazer"
+echo '2;{"header": {"protocolVersion":1, "messageID":0, "stationID":2}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test --property "parse.key=true" --property "key.separator=;" --property "key.serializer=org.apache.kafka.common.serialization.StringSerialiazer"
+echo '3;{"header": {"protocolVersion":1, "messageID":0, "stationID":3}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test --property "parse.key=true" --property "key.separator=;" --property "key.serializer=org.apache.kafka.common.serialization.StringSerialiazer"
 
-echo "Opening the local HTTP endpoint (http://${LOCAL_IP}:${ENDPOINT_PORT}) in your web browser..."
+echo "Opening the local HTTP endpoint(s) in your web browser..."
 xdg-open http://${LOCAL_IP}:${ENDPOINT_PORT}
+xdg-open http://${LOCAL_IP}:$((ENDPOINT_PORT + 1))
+xdg-open http://${LOCAL_IP}:$((ENDPOINT_PORT + 2))
+xdg-open http://${LOCAL_IP}:$((ENDPOINT_PORT + 3))
 
 sleep 5
 
-echo "Opening the Prometheus GUI (http://${LOCAL_IP}:9090) in your web browser..."
-xdg-open http://${LOCAL_IP}:9090
+echo "Opening the Prometheus GUI (http://${LOCAL_IP}:9090/targets) in your web browser..."
+xdg-open http://${LOCAL_IP}:9090/targets

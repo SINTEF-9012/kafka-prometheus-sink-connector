@@ -43,7 +43,10 @@ public class PrometheusSinkConnectorTask extends SinkTask {
 		for (Iterator<SinkRecord> sinkRecordIterator = collection.iterator(); sinkRecordIterator.hasNext();) {
 			final SinkRecord sinkRecord = sinkRecordIterator.next();
 			final String namespace = sinkRecord.topic();
-			logger.debug("Received record: '{}' on topic: '{}'", sinkRecord.value(), namespace);
+			final Object key = sinkRecord.key();
+			final int partition = sinkRecord.kafkaPartition();
+			logger.debug("Received record: '{}' on topic.partition: '{}'.'{}' witk key: '{}'", sinkRecord.value(), namespace, partition, key);
+			System.out.println("Received record: " + sinkRecord.value() + " on topic.partition: " + namespace + "." + partition + " witk key: " + key);
 			try {
 				final String stringSinkRecord = new String((byte[]) sinkRecord.value(), "UTF-8");
 				service.process(namespace, stringSinkRecord, CAM.class);

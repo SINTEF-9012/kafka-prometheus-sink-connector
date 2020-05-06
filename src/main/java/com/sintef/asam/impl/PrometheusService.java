@@ -1,6 +1,7 @@
 package com.sintef.asam.impl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,24 +10,36 @@ import com.alibaba.fastjson.JSON;
 import com.sintef.asam.PrometheusSinkConnectorConfig;
 import com.sintef.asam.impl.cam.CAM;
 
+import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 
 public class PrometheusService {
 	private static final Logger logger = LogManager.getLogger(PrometheusService.class);
 
 	private HTTPServer server;
+	private CollectorRegistry registry;
 	private PrometheusFactory factory;
+	
+	private static int port = -1;
 
 	public PrometheusFactory getFactory() {
 		return factory;
 	}
 
 	public PrometheusService(PrometheusSinkConnectorConfig props) throws IOException {
-		this(props.getPrometheusPort());
+		if (port == -1)
+			port = props.getPrometheusPort();
+		logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);
+		registry = new CollectorRegistry();
+		factory = new PrometheusFactory(registry);
+		server = new HTTPServer(new InetSocketAddress(port++), registry, false);
+		//server = new HTTPServer(port++);
 	}
 
 	private PrometheusService(int port) throws IOException {
-		factory = new PrometheusFactory();
+		registry = new CollectorRegistry();
+		factory = new PrometheusFactory(registry);
+		server = new HTTPServer(new InetSocketAddress(port++), registry, false);
 		server = new HTTPServer(port);
 	}
 
@@ -80,7 +93,7 @@ public class PrometheusService {
 	public static void main(String args[]) {
 		PrometheusService service = null;
 		try {
-			service = new PrometheusService(8088);
+			service = new PrometheusService(8089);
 			final int MAX_THREAD = 50;
 			for (int i = 0; i < MAX_THREAD; i++) {
 				final Producer p = service.new Producer(100 * i, service);
