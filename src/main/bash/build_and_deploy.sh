@@ -60,13 +60,15 @@ $KAFKA/connect-distributed.sh $KAFKA_CFG/connect-distributed.properties > $LOG_D
 sleep 15
 echo "Deploying connector for topic(s): ${TOPICS}"
 echo '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}'
-curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
+# curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
+curl -s -X POST -H 'Content-Type: application/json' http://127.0.0.1:19005/connectors -d '{"name":"'${CONNECTOR_NAME}'","config":{"connector.class":"'${CONNECTOR_CLASS}'","tasks.max":"1","topics":"'${TOPICS}'","value.converter":"org.apache.kafka.connect.converters.ByteArrayConverter","key.converter":"org.apache.kafka.connect.converters.ByteArrayConverter"}}' > $LOG_DIR/$CONNECTOR_NAME.log 2>&1
 sleep 5
 # echo "Check that connector is deployed"
 # curl -s -X GET 'Content-Type: application/json' http://127.0.0.1:19005/connectors/${CONNECTOR_NAME}
 
 echo "Just pushing one piece of data to initialize local HTTP endpoint..."
-echo '{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test
+echo '0::{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test --property "parse.key=true" --property "key.separator=::"
+# echo '{"header": {"protocolVersion":1, "messageID":0, "stationID":0}, "cam":{"speedValue":110, "headingValue":5}}' | $KAFKA/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic test
 
 echo "Opening the local HTTP endpoint (http://${LOCAL_IP}:${ENDPOINT_PORT}) in your web browser..."
 xdg-open http://${LOCAL_IP}:${ENDPOINT_PORT}
