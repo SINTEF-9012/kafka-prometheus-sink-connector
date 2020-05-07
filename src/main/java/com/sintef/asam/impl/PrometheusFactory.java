@@ -36,7 +36,7 @@ public class PrometheusFactory {
 		if (gauge == null) return;
 		gauge.gauge.clear();
 		registry.unregister(gauge.gauge);
-		gauges.remove(name);		
+		gauges.remove(qname);		
 	}
 	
 	public TimeoutGauge createOrGetGauge(String namespace, String subsystem, String name) {		

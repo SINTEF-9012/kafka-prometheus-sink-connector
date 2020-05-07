@@ -37,14 +37,21 @@ public class PrometheusService {
 		} catch (IOException e) {//we try on a port chosen by Java
 			server = new HTTPServer(new InetSocketAddress(0), registry, false);
 			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", server.getPort());
+			System.out.println("Starting Prometheus service with HTTP endpoint available on port " + server.getPort());
 		}
 	}
 
 	private PrometheusService(int port) throws IOException {
 		registry = new CollectorRegistry();
-		factory = new PrometheusFactory(registry);
-		server = new HTTPServer(new InetSocketAddress(port++), registry, false);
-		server = new HTTPServer(port);
+		factory = new PrometheusFactory(registry);		
+		try {
+			server = new HTTPServer(new InetSocketAddress(port), registry, false);
+			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);
+		} catch (IOException e) {//we try on a port chosen by Java
+			server = new HTTPServer(new InetSocketAddress(0), registry, false);
+			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", server.getPort());
+			System.out.println("Starting Prometheus service with HTTP endpoint available on port " + server.getPort());
+		}
 	}
 
 	public void process(String namespace, String json, Class<?> messageType) {
@@ -82,7 +89,7 @@ public class PrometheusService {
 				final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":"
 						+ (baseID + (i % 100)) + "}," + "\"cam\":{" + "\"speedValue\":" + (i % 80) + ","
 						+ "\"headingValue\":" + (i % 50) + "}" + "}";
-				System.out.println("data " + i + ": " + json);
+				//System.out.println("data " + i + ": " + json);
 				service.process("cam", json, CAM.class);
 				i++;
 				try { Thread.sleep(5); } catch (InterruptedException e) { e.printStackTrace(); }
