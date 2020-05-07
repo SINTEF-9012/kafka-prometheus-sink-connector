@@ -14,7 +14,7 @@ public class PrometheusFactory {
 	private static final Logger logger = LogManager.getLogger(PrometheusFactory.class);
 	
 	CollectorRegistry registry;
-	private Map<String, TimeoutGauge> gauges = Collections.synchronizedMap(new HashMap<>());
+	Map<String, TimeoutGauge> gauges = Collections.synchronizedMap(new HashMap<>());
 	
 	public PrometheusFactory(CollectorRegistry registry) {
 		this.registry = registry;
@@ -27,7 +27,7 @@ public class PrometheusFactory {
 				registry.unregister(gauge.gauge);
 			}
 		}				
-		gauges = null;
+		gauges.clear();
 	}
 
 	public void removeGauge(String namespace, String subsystem, String name) {

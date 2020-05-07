@@ -13,12 +13,12 @@ public class TimeoutGauge {
 	
 	private static final Logger logger = LogManager.getLogger(TimeoutGauge.class);
 	
-	private static final long TIMEOUT = 10; //timeout in seconds
+	static long TIMEOUT = 10; //timeout in seconds
 	
 	private final PrometheusFactory factory;
 	final Gauge gauge;
 	
-    private final PublishSubject<Float> publishSubject;
+    final PublishSubject<Float> publishSubject;
     private final Observable<Float> timeout;
     
 	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name) {

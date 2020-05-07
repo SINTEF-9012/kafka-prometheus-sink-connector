@@ -16,9 +16,10 @@ public class PrometheusSinkConnectorConfig extends AbstractConfig {
 	public static final String PROMETHEUS_PORT = "prometheus.port";
 	private static final String PROMETHEUS_PORT_DOC = "Port for the local Prometheus HTTP endpoint";
 	private static final int PROMETHEUS_PORT_DEFAULT = 8085;
-
-	/*public static final String TIMESERIES = "timeseries";
-	private static final String TIMESERIES_DOC = "Path (in JSON document) to the data to be monitored"*/;
+	
+	public static final String PROMETHEUS_TIMEOUT = "prometheus.timeout";
+	private static final String PROMETHEUS_TIMEOUT_DOC = "Time (in seconds) after which a non-updated timeseries can be considered (temporarily) inactive";
+	private static final int PROMETHEUS_TIMEOUT_DEFAULT = 10;
 
 	public PrometheusSinkConnectorConfig(ConfigDef config, Map<String, String> parsedConfig) {
 		super(config, parsedConfig);
@@ -30,12 +31,16 @@ public class PrometheusSinkConnectorConfig extends AbstractConfig {
 
 	public static ConfigDef conf() {
 		return new ConfigDef()
-				.define(PROMETHEUS_PORT, Type.INT, PROMETHEUS_PORT_DEFAULT, Importance.HIGH, PROMETHEUS_PORT_DOC);
-				//.define(TIMESERIES, Type.LIST, Importance.HIGH, TIMESERIES_DOC);
+				.define(PROMETHEUS_PORT, Type.INT, PROMETHEUS_PORT_DEFAULT, Importance.HIGH, PROMETHEUS_PORT_DOC)
+				.define(PROMETHEUS_TIMEOUT, Type.INT, PROMETHEUS_TIMEOUT_DEFAULT, Importance.HIGH, PROMETHEUS_TIMEOUT_DOC);
 	}
 
 	public int getPrometheusPort() {
 		return this.getInt(PROMETHEUS_PORT);
 	}
+	
+	public int getPrometheusTimeout() {
+		return this.getInt(PROMETHEUS_TIMEOUT);
+	}	
 
 }

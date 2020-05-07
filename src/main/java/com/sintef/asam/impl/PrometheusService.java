@@ -20,28 +20,20 @@ public class PrometheusService {
 	private CollectorRegistry registry;
 	private PrometheusFactory factory;
 	
-	private static int port = -1;
+	private static int portOffset = 0;
+	int port;
 
 	public PrometheusFactory getFactory() {
 		return factory;
 	}
 
 	public PrometheusService(PrometheusSinkConnectorConfig props) throws IOException {
-		if (port == -1)
-			port = props.getPrometheusPort();		
-		registry = new CollectorRegistry();
-		factory = new PrometheusFactory(registry);
-		try {
-			server = new HTTPServer(new InetSocketAddress(port++), registry, false);
-			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);
-		} catch (IOException e) {//we try on a port chosen by Java
-			server = new HTTPServer(new InetSocketAddress(0), registry, false);
-			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", server.getPort());
-			System.out.println("Starting Prometheus service with HTTP endpoint available on port " + server.getPort());
-		}
+		this(props.getPrometheusPort()+portOffset, props.getPrometheusTimeout());
+		portOffset++;		
 	}
 
-	private PrometheusService(int port) throws IOException {
+	public PrometheusService(int port, int timeout) throws IOException {
+		TimeoutGauge.TIMEOUT = timeout;
 		registry = new CollectorRegistry();
 		factory = new PrometheusFactory(registry);		
 		try {
@@ -52,6 +44,7 @@ public class PrometheusService {
 			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", server.getPort());
 			System.out.println("Starting Prometheus service with HTTP endpoint available on port " + server.getPort());
 		}
+		this.port = server.getPort();
 	}
 
 	public void process(String namespace, String json, Class<?> messageType) {
@@ -104,7 +97,7 @@ public class PrometheusService {
 	public static void main(String args[]) {
 		PrometheusService service = null;
 		try {
-			service = new PrometheusService(8089);
+			service = new PrometheusService(8089, 10);
 			final int MAX_THREAD = 50;
 			for (int i = 0; i < MAX_THREAD; i++) {
 				final Producer p = service.new Producer(100 * i, service);
