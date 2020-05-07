@@ -2,8 +2,7 @@ package com.sintef.asam.impl.cam;
 
 import com.sintef.asam.impl.Message;
 import com.sintef.asam.impl.PrometheusService;
-
-import io.prometheus.client.Gauge;
+import com.sintef.asam.impl.TimeoutGauge;
 
 public class CAM implements Message {// TODO: currently just a mock-up of CAM messages...
 
@@ -32,13 +31,11 @@ public class CAM implements Message {// TODO: currently just a mock-up of CAM me
 		final float speed = cam.getSpeedValue();
 		final float heading = cam.getHeadingValue();
 
-		final Gauge speedGauge = service.getFactory().createOrGetGauge(namespace, Long.toString(stationID),
-				"speedValue");
-		speedGauge.set(speed);
+		final TimeoutGauge speedGauge = service.getFactory().createOrGetGauge(namespace, Long.toString(stationID), "speedValue");
+		speedGauge.update(speed);
 
-		final Gauge headingGauge = service.getFactory().createOrGetGauge(namespace, Long.toString(stationID),
-				"headingValue");
-		headingGauge.set(heading);
+		final TimeoutGauge headingGauge = service.getFactory().createOrGetGauge(namespace, Long.toString(stationID), "headingValue");
+		headingGauge.update(heading);
 	}
 
 }

@@ -53,6 +53,7 @@
     </build>
 
     <dependencies>
+        
         <dependency>
           <groupId>io.prometheus</groupId>
           <artifactId>simpleclient</artifactId>
@@ -63,6 +64,13 @@
           <artifactId>simpleclient_httpserver</artifactId>
           <version>0.8.1</version>
         </dependency>
+        
+        <dependency>
+    		<groupId>io.reactivex.rxjava3</groupId>
+    		<artifactId>rxjava</artifactId>
+    		<version>3.0.3</version>
+		</dependency>
+        
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>
@@ -78,6 +86,7 @@
             <artifactId>kafka-clients</artifactId>
             <version>2.4.0</version>
         </dependency>
+        
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>

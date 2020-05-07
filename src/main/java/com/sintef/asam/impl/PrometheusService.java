@@ -33,7 +33,6 @@ public class PrometheusService {
 		registry = new CollectorRegistry();
 		factory = new PrometheusFactory(registry);
 		server = new HTTPServer(new InetSocketAddress(port++), registry, false);
-		//server = new HTTPServer(port++);
 	}
 
 	private PrometheusService(int port) throws IOException {
@@ -74,14 +73,14 @@ public class PrometheusService {
 		@Override
 		public void run() {
 			int i = 0;
-			while (!Thread.interrupted()) {
+			while (i<1000 && !Thread.interrupted()) {
 				final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":"
 						+ (baseID + (i % 100)) + "}," + "\"cam\":{" + "\"speedValue\":" + (i % 80) + ","
 						+ "\"headingValue\":" + (i % 50) + "}" + "}";
 				System.out.println("data " + i + ": " + json);
 				service.process("cam", json, CAM.class);
 				i++;
-				try { Thread.sleep(25); } catch (InterruptedException e) { e.printStackTrace(); }
+				try { Thread.sleep(1); } catch (InterruptedException e) { e.printStackTrace(); }
 				 
 			}
 
@@ -98,8 +97,9 @@ public class PrometheusService {
 			for (int i = 0; i < MAX_THREAD; i++) {
 				final Producer p = service.new Producer(100 * i, service);
 				new Thread(p).start();
+				Thread.sleep(100);
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			if (service != null)
 				service.stop();
