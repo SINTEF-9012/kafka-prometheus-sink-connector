@@ -28,11 +28,16 @@ public class PrometheusService {
 
 	public PrometheusService(PrometheusSinkConnectorConfig props) throws IOException {
 		if (port == -1)
-			port = props.getPrometheusPort();
-		logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);
+			port = props.getPrometheusPort();		
 		registry = new CollectorRegistry();
 		factory = new PrometheusFactory(registry);
-		server = new HTTPServer(new InetSocketAddress(port++), registry, false);
+		try {
+			server = new HTTPServer(new InetSocketAddress(port++), registry, false);
+			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);
+		} catch (IOException e) {//we try on a port chosen by Java
+			server = new HTTPServer(new InetSocketAddress(0), registry, false);
+			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", server.getPort());
+		}
 	}
 
 	private PrometheusService(int port) throws IOException {
@@ -80,7 +85,7 @@ public class PrometheusService {
 				System.out.println("data " + i + ": " + json);
 				service.process("cam", json, CAM.class);
 				i++;
-				try { Thread.sleep(1); } catch (InterruptedException e) { e.printStackTrace(); }
+				try { Thread.sleep(5); } catch (InterruptedException e) { e.printStackTrace(); }
 				 
 			}
 
@@ -97,8 +102,10 @@ public class PrometheusService {
 			for (int i = 0; i < MAX_THREAD; i++) {
 				final Producer p = service.new Producer(100 * i, service);
 				new Thread(p).start();
-				Thread.sleep(100);
+				Thread.sleep(200);
 			}
+			Thread.sleep(20000);
+			throw new Exception("Terminating!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (service != null)

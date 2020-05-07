@@ -35,6 +35,7 @@ public class TimeoutGauge {
 	    		},
 	    		err -> {
 	    			this.factory.removeGauge(namespace, subsystem, name); 
+	    			this.publishSubject.onTerminateDetach();
 	    			logger.info("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
 	    		},
 	    		() -> logger.debug("Complete!")
