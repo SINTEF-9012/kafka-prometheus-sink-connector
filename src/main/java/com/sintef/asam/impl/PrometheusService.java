@@ -2,6 +2,8 @@ package com.sintef.asam.impl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,28 +67,29 @@ public class PrometheusService {
 		}
 	}
 
-	class Producer implements Runnable {
+	private class Producer implements Runnable {
 
-		int baseID = 0;
+		boolean stopRequested = false;
+		long baseID = 0;
+		int count = 0;
+		long range;
 		PrometheusService service;
 
-		public Producer(int baseID, PrometheusService service) {
+		public Producer(long baseID, long range, PrometheusService service) {
 			this.baseID = baseID;
 			this.service = service;
+			this.range = range;
 		}
 
 		@Override
 		public void run() {
-			int i = 0;
-			while (i<1000 && !Thread.interrupted()) {
+			
+			while (!stopRequested) {
 				final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":"
-						+ (baseID + (i % 100)) + "}," + "\"cam\":{" + "\"speedValue\":" + (i % 80) + ","
-						+ "\"headingValue\":" + (i % 50) + "}" + "}";
-				//System.out.println("data " + i + ": " + json);
+						+ (baseID + (count % range)) + "}," + "\"cam\":{" + "\"speedValue\":" + (count % 80) + ","
+						+ "\"headingValue\":" + (count % 50) + "}" + "}";
 				service.process("cam", json, CAM.class);
-				i++;
-				try { Thread.sleep(5); } catch (InterruptedException e) { e.printStackTrace(); }
-				 
+				count++;				 
 			}
 
 		}
@@ -95,21 +98,46 @@ public class PrometheusService {
 
 	// FIXME: write a test
 	public static void main(String args[]) {
-		PrometheusService service = null;
-		try {
-			service = new PrometheusService(8089, 10);
-			final int MAX_THREAD = 50;
-			for (int i = 0; i < MAX_THREAD; i++) {
-				final Producer p = service.new Producer(100 * i, service);
-				new Thread(p).start();
-				Thread.sleep(200);
+		final int MAX_SERVICES = 5;		
+		final int MAX_PRODUCERS = 20;
+		final long MAX_STATION_ID_PER_PRODUCER = 10000;
+		final int DURATION = 60; //s
+		
+		List<PrometheusService> services = new ArrayList<>();
+		try {				
+			for (int i = 0; i < MAX_SERVICES; i++) {
+				final PrometheusService service = new PrometheusService(8089+i, 10);
+				services.add(service);
 			}
-			Thread.sleep(20000);
+									
+			final List<Producer> producers = new ArrayList<>();
+			for (int i = 0; i < MAX_PRODUCERS; i++) {
+				final PrometheusService service = services.get(i%MAX_SERVICES);
+				final Producer p = service.new Producer(MAX_STATION_ID_PER_PRODUCER * i, MAX_STATION_ID_PER_PRODUCER, service);
+				producers.add(p);
+				new Thread(p).start();
+			}
+			
+			Thread.sleep(DURATION * 1000);
+			
+			for(Producer p : producers) {
+				p.stopRequested = true;
+			}
+			
+			Thread.sleep(5000);
+			
+			long sum = 0;
+			for(Producer p : producers) {
+				sum += p.count;					
+			}
+			System.out.println("Throuput: " + (sum/DURATION) + " msg/s");									
+			
 			throw new Exception("Terminating!");
 		} catch (Exception e) {
-			e.printStackTrace();
-			if (service != null)
+			//e.printStackTrace();
+			for(PrometheusService service : services) {
 				service.stop();
+			}
 		}
 	}
 

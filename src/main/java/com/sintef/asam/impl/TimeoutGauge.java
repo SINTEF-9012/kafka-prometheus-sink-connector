@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import io.prometheus.client.Gauge;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class TimeoutGauge {
@@ -15,36 +16,49 @@ public class TimeoutGauge {
 	
 	static long TIMEOUT = 10; //timeout in seconds
 	
+	
 	private final PrometheusFactory factory;
 	final Gauge gauge;
 	
     final PublishSubject<Float> publishSubject;
     final Observable<Float> timeout;
+    Disposable timeoutDisp;
+    
+    private boolean terminated;
     
 	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name) {
 		this.factory = factory;
 		this.gauge = Gauge.build().namespace(namespace).subsystem(subsystem).name(name)
 				.help("Gauge " + namespace + "_" + subsystem + "_" + name).register(factory.registry);
 		this.publishSubject = PublishSubject.create();
-	    this.timeout = publishSubject.distinctUntilChanged().timeout(TIMEOUT, TimeUnit.SECONDS);
-	    
-	    timeout.subscribe(
+	    this.timeout = publishSubject/*.onErrorComplete()*/.distinctUntilChanged()/*.onErrorComplete()*/.timeout(TIMEOUT, TimeUnit.SECONDS, Observable.empty()).onErrorComplete();
+	    	    
+	    this.timeoutDisp = timeout.subscribe(
 	    		e -> {
 	    			this.gauge.set(e);
 	    			logger.debug(e);
 	    		},
 	    		err -> {
-	    			this.factory.removeGauge(namespace, subsystem, name); 
-	    			this.publishSubject.onTerminateDetach();
-	    			this.timeout.onTerminateDetach();
-	    			logger.info("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
+	    			//System.out.println("err");
+	    			terminate(namespace, subsystem, name);	    			
 	    		},
-	    		() -> logger.debug("Complete!")
+	    		() -> {
+	    			//System.out.println("complete");	
+	    			terminate(namespace, subsystem, name);
+	    		} 
 	    );	    	    
 	}
 
-	public void update(float v) {		
-		publishSubject.onNext(v);
+	private void terminate(String namespace, String subsystem, String name) {
+		terminated = true;	    			
+		this.factory.removeGauge(namespace, subsystem, name);
+		//this.timeoutDisp.dispose();
+		logger.info("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
+		//System.out.println("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
+	}
+	
+	public void update(float v) {
+		if(!terminated) publishSubject.onNext(v);
 	}
 	
 	/*public static void main(String args[]) {
