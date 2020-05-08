@@ -19,14 +19,14 @@ public class TimeoutGauge {
 	final Gauge gauge;
 	
     final PublishSubject<Float> publishSubject;
-    private final Observable<Float> timeout;
+    final Observable<Float> timeout;
     
 	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name) {
 		this.factory = factory;
 		this.gauge = Gauge.build().namespace(namespace).subsystem(subsystem).name(name)
 				.help("Gauge " + namespace + "_" + subsystem + "_" + name).register(factory.registry);
 		this.publishSubject = PublishSubject.create();
-	    this.timeout = publishSubject.timeout(TIMEOUT, TimeUnit.SECONDS);
+	    this.timeout = publishSubject.distinctUntilChanged().timeout(TIMEOUT, TimeUnit.SECONDS);
 	    
 	    timeout.subscribe(
 	    		e -> {
@@ -36,11 +36,11 @@ public class TimeoutGauge {
 	    		err -> {
 	    			this.factory.removeGauge(namespace, subsystem, name); 
 	    			this.publishSubject.onTerminateDetach();
+	    			this.timeout.onTerminateDetach();
 	    			logger.info("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
 	    		},
 	    		() -> logger.debug("Complete!")
-	    );
-	    
+	    );	    	    
 	}
 
 	public void update(float v) {		
