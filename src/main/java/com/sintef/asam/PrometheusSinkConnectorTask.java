@@ -13,13 +13,13 @@ import org.apache.logging.log4j.Logger;
 
 import com.alibaba.fastjson.JSONException;
 import com.sintef.asam.impl.PrometheusService;
-import com.sintef.asam.impl.cam.CAM;
 
 public class PrometheusSinkConnectorTask extends SinkTask {
 
 	private static final Logger logger = LogManager.getLogger(PrometheusSinkConnectorTask.class);
 
 	private PrometheusService service;
+	private Class<?> deserializer;
 
 	@Override
 	public String version() {
@@ -28,10 +28,17 @@ public class PrometheusSinkConnectorTask extends SinkTask {
 
 	@Override
 	public void start(Map<String, String> map) {
-		try {
-			service = new PrometheusService(new PrometheusSinkConnectorConfig(map));
+		final PrometheusSinkConnectorConfig cfg = new PrometheusSinkConnectorConfig(map);
+		try {			
+			deserializer = Class.forName(cfg.getPrometheusDeserializer());
+			service = new PrometheusService(cfg);
 		} catch (IOException e) {
 			final String err = "Could not start Prometheus service: " + e.getMessage();
+			System.err.println(err);
+			logger.error(err);
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			final String err = "Could not load deserializer class " + cfg.getPrometheusDeserializer() + ": " + e.getMessage();
 			System.err.println(err);
 			logger.error(err);
 			e.printStackTrace();
@@ -49,7 +56,7 @@ public class PrometheusSinkConnectorTask extends SinkTask {
 			System.out.println("Received record: " + sinkRecord.value() + " on topic.partition: " + namespace + "." + partition + " witk key: " + key);
 			try {
 				final String stringSinkRecord = new String((byte[]) sinkRecord.value(), "UTF-8");
-				service.process(namespace, stringSinkRecord, CAM.class);
+				service.process(namespace, stringSinkRecord, deserializer);
 			} catch (JSONException e) {
 				logger.error("Could not convert record to JSON '{}'", sinkRecord);
 			} catch (UnsupportedEncodingException e) {
