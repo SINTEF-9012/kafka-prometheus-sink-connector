@@ -121,6 +121,7 @@ public class PrometheusDockerTest {
 	@Test
 	public void test() {
 		try {
+			TimeoutGauge.TIMEOUT = 5;
 			final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":0}," + "\"cam\":{" + "\"speedValue\":%s,"
 					+ "\"headingValue\":%s}" + "}";
 			final PrometheusService service = new PrometheusService(8089, 10);
@@ -148,10 +149,23 @@ public class PrometheusDockerTest {
 			assertTrue(heading3.contains("\"52\""));
 			assertTrue(speed3.contains("\"102\""));
 			
-						
+			String stopDate = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ss.SSS'Z'").format(new Date());
+			
+			//Check that data is still there, even if gauge has timed out
+			Thread.sleep(10000);	
+			// a) it is not available anymore through instant query
+			final String heading4 = GET("/api/v1/query?query=ns_0_headingValue");
+			final String speed4 = GET("/api/v1/query?query=ns_0_speedValue");
+			assertFalse(heading4.contains("\"value\""));
+			assertFalse(speed4.contains("\"value\""));
+			
+			// b) data should however still be there e.g. through range vectors
 			//GET("/api/v1/query_range?query=ns_0_headingValue&start=" + startDate + "&end=" + stopDate + "&step=1s");
 			//GET("/api/v1/query_range?query=ns_0_speedValue&start=" + startDate + "&end=" + stopDate + "&step=1s");
-			
+			final String heading5 = GET("/api/v1/query?query=ns_0_headingValue[30s]");
+			final String speed5 = GET("/api/v1/query?query=ns_0_speedValue[30s]");
+			assertTrue(heading5.contains("\"50\"") && heading5.contains("\"51\"") && heading5.contains("\"52\""));
+			assertTrue(speed5.contains("\"100\"") && speed5.contains("\"101\"") && speed5.contains("\"102\""));
 		} catch (InterruptedException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
