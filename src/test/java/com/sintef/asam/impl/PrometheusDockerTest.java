@@ -1,5 +1,8 @@
 package com.sintef.asam.impl;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -11,13 +14,15 @@ import java.net.SocketException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.sintef.asam.impl.cam.CAM;
 
 public class PrometheusDockerTest {
 
@@ -77,9 +82,9 @@ public class PrometheusDockerTest {
 			FileUtils.copyDirectoryToDirectory(dockerDir, tempDir);
 
 			if (isWindows) {
-				runCommand("cmd.exe", "/c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8085 && docker ps");
+				runCommand("cmd.exe", "/c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8089 && docker ps");
 			} else {
-				runCommand("sh", "-c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8085");//Maybe?
+				runCommand("sh", "-c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8089 && docker ps");//Maybe?
 			}
 
 		} catch (URISyntaxException | IOException e) {
@@ -87,7 +92,7 @@ public class PrometheusDockerTest {
 		}		
 	}
 
-	private String GET() {
+	private String GET(String api) {
 		StringBuilder result = new StringBuilder();
 		try {
 			String address = localIP;
@@ -96,8 +101,8 @@ public class PrometheusDockerTest {
 			} /*else {
 				runCommand("sh", "-c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8085");//Maybe?
 			}*/
-			System.out.println("Connecting to http://" + address + ":9090");
-			URL url = new URL("http://" + address + ":9090");
+			System.out.println("Connecting to http://" + address + ":9090"+api);
+			URL url = new URL("http://" + address + ":9090" + api);
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
 			BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -115,7 +120,43 @@ public class PrometheusDockerTest {
 
 	@Test
 	public void test() {
-		GET();
+		try {
+			final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":0}," + "\"cam\":{" + "\"speedValue\":%s,"
+					+ "\"headingValue\":%s}" + "}";
+			final PrometheusService service = new PrometheusService(8089, 10);
+			Thread.sleep(5000);		
+			
+			final long start = System.currentTimeMillis();
+			String startDate = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ss.SSS'Z'").format(new Date());
+			
+			service.process("ns", String.format(json, 100, 50), CAM.class);
+			Thread.sleep(1000);
+			final String heading1 = GET("/api/v1/query?query=ns_0_headingValue");
+			final String speed1 = GET("/api/v1/query?query=ns_0_speedValue");
+			assertTrue(heading1.contains("\"50\""));
+			assertTrue(speed1.contains("\"100\""));
+			service.process("ns", String.format(json, 101, 51), CAM.class);
+			Thread.sleep(1000);
+			final String heading2 = GET("/api/v1/query?query=ns_0_headingValue");
+			final String speed2 = GET("/api/v1/query?query=ns_0_speedValue");
+			assertTrue(heading2.contains("\"51\""));
+			assertTrue(speed2.contains("\"101\""));
+			service.process("ns", String.format(json, 102, 52), CAM.class);
+			Thread.sleep(1000);
+			final String heading3 = GET("/api/v1/query?query=ns_0_headingValue");
+			final String speed3 = GET("/api/v1/query?query=ns_0_speedValue");
+			assertTrue(heading3.contains("\"52\""));
+			assertTrue(speed3.contains("\"102\""));
+			
+						
+			//GET("/api/v1/query_range?query=ns_0_headingValue&start=" + startDate + "&end=" + stopDate + "&step=1s");
+			//GET("/api/v1/query_range?query=ns_0_speedValue&start=" + startDate + "&end=" + stopDate + "&step=1s");
+			
+		} catch (InterruptedException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 
 }
