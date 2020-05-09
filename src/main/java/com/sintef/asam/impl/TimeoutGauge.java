@@ -14,26 +14,27 @@ public class TimeoutGauge {
 	
 	private static final Logger logger = LogManager.getLogger(TimeoutGauge.class);
 	
-	static long TIMEOUT = 10; //timeout in seconds
+	long timeout = 10; //timeout in seconds
 	
 	
 	private final PrometheusFactory factory;
 	final Gauge gauge;
 	
-    final PublishSubject<Float> publishSubject;
-    final Observable<Float> timeout;
-    Disposable timeoutDisp;
+    final PublishSubject<Float> publish;
+    final Observable<Float> obs;
+    Disposable disp;
     
     private boolean terminated;
     
-	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name) {
+	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name, long timeout) {
+		this.timeout = timeout;
 		this.factory = factory;
 		this.gauge = Gauge.build().namespace(namespace).subsystem(subsystem).name(name)
 				.help("Gauge " + namespace + "_" + subsystem + "_" + name).register(factory.registry);
-		this.publishSubject = PublishSubject.create();
-	    this.timeout = publishSubject/*.onErrorComplete()*/.distinctUntilChanged()/*.onErrorComplete()*/.timeout(TIMEOUT, TimeUnit.SECONDS, Observable.empty()).onErrorComplete();
+		this.publish = PublishSubject.create();
+	    this.obs = publish.distinctUntilChanged().timeout(timeout, TimeUnit.SECONDS, Observable.empty()).onErrorComplete();
 	    	    
-	    this.timeoutDisp = timeout.subscribe(
+	    this.disp = obs.subscribe(
 	    		e -> {
 	    			this.gauge.set(e);
 	    			logger.debug(e);
@@ -58,7 +59,7 @@ public class TimeoutGauge {
 	}
 	
 	public void update(float v) {
-		if(!terminated) publishSubject.onNext(v);
+		if(!terminated) publish.onNext(v);
 	}
 	
 	/*public static void main(String args[]) {

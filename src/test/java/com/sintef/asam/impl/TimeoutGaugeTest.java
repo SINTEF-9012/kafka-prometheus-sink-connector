@@ -15,12 +15,11 @@ public class TimeoutGaugeTest {
 		final float value = 150f;
 		
 		final CollectorRegistry registry = new CollectorRegistry();
-		final PrometheusFactory factory = new PrometheusFactory(registry);
-		final TimeoutGauge gauge = new TimeoutGauge(factory, "ns", "ss", "n");
-		TimeoutGauge.TIMEOUT = 2;
+		final PrometheusFactory factory = new PrometheusFactory(registry,2);
+		final TimeoutGauge gauge = new TimeoutGauge(factory, "ns", "ss", "n",2);
 		
 		final Counter count = new Counter();
-		Disposable d = gauge.timeout.subscribe(
+		Disposable d = gauge.obs.subscribe(
 				e -> {
 					if(count.i == 0) assertEquals((double)e, (double)value, 0.001);
 					else assertEquals((double)e, (double)value+1, 0.001);
@@ -41,7 +40,7 @@ public class TimeoutGaugeTest {
 		
 		d.dispose();
 		
-		gauge.timeout.subscribe(
+		gauge.obs.subscribe(
 			e -> {
 				fail();
     		},
@@ -49,7 +48,7 @@ public class TimeoutGaugeTest {
     	);
 		
 		try {
-			Thread.sleep((TimeoutGauge.TIMEOUT+1)*1000);
+			Thread.sleep((gauge.timeout+1)*1000);
 			gauge.update(value);	
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();

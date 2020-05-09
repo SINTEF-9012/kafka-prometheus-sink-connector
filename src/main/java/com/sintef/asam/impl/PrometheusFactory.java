@@ -15,8 +15,10 @@ public class PrometheusFactory {
 	
 	CollectorRegistry registry;
 	Map<String, TimeoutGauge> gauges = Collections.synchronizedMap(new HashMap<>());
+	long timeout;
 	
-	public PrometheusFactory(CollectorRegistry registry) {
+	public PrometheusFactory(CollectorRegistry registry, long timeout) {
+		this.timeout = timeout;
 		this.registry = registry;
 	}
 
@@ -44,7 +46,7 @@ public class PrometheusFactory {
 		TimeoutGauge gauge = gauges.get(qname);
 		if (gauge == null) {
 			logger.info("Gauge '{}' does not exist. Creating it.", (subsystem + "_" + namespace + "_" + name));
-			gauge = new TimeoutGauge(this, namespace, subsystem, name);
+			gauge = new TimeoutGauge(this, namespace, subsystem, name, timeout);
 			gauges.put(qname, gauge);
 		}
 

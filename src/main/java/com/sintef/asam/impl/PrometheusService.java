@@ -35,9 +35,8 @@ public class PrometheusService {
 	}
 
 	public PrometheusService(int port, int timeout) throws IOException {
-		TimeoutGauge.TIMEOUT = timeout;
 		registry = new CollectorRegistry();
-		factory = new PrometheusFactory(registry);		
+		factory = new PrometheusFactory(registry, timeout);		
 		try {
 			server = new HTTPServer(new InetSocketAddress(port), registry, false);
 			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);

@@ -121,10 +121,9 @@ public class PrometheusDockerTest {
 	@Test
 	public void test() {
 		try {
-			TimeoutGauge.TIMEOUT = 5;
 			final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":0}," + "\"cam\":{" + "\"speedValue\":%s,"
 					+ "\"headingValue\":%s}" + "}";
-			final PrometheusService service = new PrometheusService(8089, 10);
+			final PrometheusService service = new PrometheusService(8089, 5);
 			Thread.sleep(5000);		
 			
 			final long start = System.currentTimeMillis();
@@ -166,6 +165,14 @@ public class PrometheusDockerTest {
 			final String speed5 = GET("/api/v1/query?query=ns_0_speedValue[30s]");
 			assertTrue(heading5.contains("\"50\"") && heading5.contains("\"51\"") && heading5.contains("\"52\""));
 			assertTrue(speed5.contains("\"100\"") && speed5.contains("\"101\"") && speed5.contains("\"102\""));
+			
+			//Check that it still works when we create a new gauge for the same timeseries
+			service.process("ns", String.format(json, 103, 53), CAM.class);
+			Thread.sleep(1000);
+			final String heading6 = GET("/api/v1/query?query=ns_0_headingValue");
+			final String speed6 = GET("/api/v1/query?query=ns_0_speedValue");
+			assertTrue(heading6.contains("\"53\""));
+			assertTrue(speed6.contains("\"103\""));
 		} catch (InterruptedException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
