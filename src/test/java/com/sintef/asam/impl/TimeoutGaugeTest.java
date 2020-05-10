@@ -13,29 +13,27 @@ public class TimeoutGaugeTest {
 	@Test
 	public void update() {
 		final float value = 150f;
+		final int buffer = 3;
 		
 		final CollectorRegistry registry = new CollectorRegistry();
-		final PrometheusFactory factory = new PrometheusFactory(registry,2);
-		final TimeoutGauge gauge = new TimeoutGauge(factory, "ns", "ss", "n",2);
+		final PrometheusFactory factory = new PrometheusFactory(registry,2,buffer);
+		final TimeoutGauge gauge = new TimeoutGauge(factory, "ns", "ss", "n",2,buffer);
 		
 		final Counter count = new Counter();
 		Disposable d = gauge.obs.subscribe(
 				e -> {
-					if(count.i == 0) assertEquals((double)e, (double)value, 0.001);
-					else assertEquals((double)e, (double)value+1, 0.001);
+					assertEquals(buffer, e.size());
+					if(count.i == 0) assertEquals((double)e.get(0), (double)value, 0.001);
+					else assertEquals((double)e.get(0), (double)value+1, 0.001);
 					count.inc();
 	    		},
 	    		err -> {
 	    			fail();
 	    		});
+		for(int i=0; i<buffer; i++)	gauge.update(value);
+		assertEquals(1, count.i);
 		
-		gauge.update(value);
-		gauge.update(value);
-		gauge.update(value);
-		
-		assertEquals(1, count.i); //the gauge should debounce consecutive similar values
-		
-		gauge.update(value+1);
+		for(int i=0; i<buffer; i++)	gauge.update(value+1);
 		assertEquals(2, count.i);
 		
 		d.dispose();

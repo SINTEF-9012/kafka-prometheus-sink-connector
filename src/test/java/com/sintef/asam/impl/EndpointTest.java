@@ -42,10 +42,10 @@ public class EndpointTest {
 	}
 
 	@Test
-	public void process() {	
+	public void processOne() {	
 		PrometheusService service = null;
 		try {
-			service = new PrometheusService(8089, timeout);
+			service = new PrometheusService(8089, timeout, 1);
 			service.process("ns", String.format(json, speedValue, headingValue), CAM.class);
 
 			final String result = GET(service.port);
@@ -58,12 +58,32 @@ public class EndpointTest {
 			if(service != null) service.stop();
 		}
 	}
+	
+	@Test
+	public void processThree() {	
+		PrometheusService service = null;
+		try {
+			service = new PrometheusService(8089, timeout, 3);
+			service.process("ns", String.format(json, speedValue, headingValue), CAM.class);
+			service.process("ns", String.format(json, speedValue+1, headingValue+1), CAM.class);
+			service.process("ns", String.format(json, speedValue+2, headingValue+2), CAM.class);
+
+			final String result = GET(service.port);
+
+			assertTrue(result.contains(String.format("ns_0_speedValue %s", speedValue+1)));
+			assertTrue(result.contains(String.format("ns_0_headingValue %s", headingValue+1)));
+		} catch (IOException e) {
+			fail("Service should find an alternative port if prefered specified port is busy.");			
+		} finally {
+			if(service != null) service.stop();
+		}
+	}	
 
 	@Test
 	public void Timeout() {
 		PrometheusService service = null;
 		try {
-			service = new PrometheusService(8089, timeout);
+			service = new PrometheusService(8089, timeout, 1);
 			service.process("ns", String.format(json, speedValue, headingValue), CAM.class);
 
 			Thread.sleep((timeout+1)*1000);

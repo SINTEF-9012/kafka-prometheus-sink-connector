@@ -123,7 +123,7 @@ public class PrometheusDockerTest {
 		try {
 			final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":0}," + "\"cam\":{" + "\"speedValue\":%s,"
 					+ "\"headingValue\":%s}" + "}";
-			final PrometheusService service = new PrometheusService(8089, 5);
+			final PrometheusService service = new PrometheusService(8089, 5, 1);
 			Thread.sleep(5000);		
 			
 			final long start = System.currentTimeMillis();

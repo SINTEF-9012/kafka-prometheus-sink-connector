@@ -12,7 +12,7 @@ public class FactoryTest {
 	@Test
 	public void add() {
 		CollectorRegistry registry = new CollectorRegistry();
-		PrometheusFactory factory = new PrometheusFactory(registry,10);
+		PrometheusFactory factory = new PrometheusFactory(registry,10,1);
 		
 		TimeoutGauge gauge = factory.createOrGetGauge("ns", "ss", "n");
 		assertNotNull(gauge);
@@ -22,7 +22,7 @@ public class FactoryTest {
 	@Test
 	public void remove() {
 		CollectorRegistry registry = new CollectorRegistry();
-		PrometheusFactory factory = new PrometheusFactory(registry,10);
+		PrometheusFactory factory = new PrometheusFactory(registry,10,1);
 		
 		factory.createOrGetGauge("ns", "ss", "n");
 		assertEquals(factory.gauges.size(), 1);
@@ -33,7 +33,7 @@ public class FactoryTest {
 	@Test
 	public void clean() {
 		CollectorRegistry registry = new CollectorRegistry();
-		PrometheusFactory factory = new PrometheusFactory(registry,10);
+		PrometheusFactory factory = new PrometheusFactory(registry,10,1);
 		
 		factory.createOrGetGauge("ns", "ss", "n");
 		factory.createOrGetGauge("ns", "ss", "n2");

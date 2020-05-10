@@ -1,5 +1,6 @@
 package com.sintef.asam.impl;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
@@ -15,29 +16,33 @@ public class TimeoutGauge {
 	private static final Logger logger = LogManager.getLogger(TimeoutGauge.class);
 	
 	long timeout = 10; //timeout in seconds
+	int buffer = 1;
 	
 	
 	private final PrometheusFactory factory;
 	final Gauge gauge;
 	
     final PublishSubject<Float> publish;
-    final Observable<Float> obs;
+    final Observable<List<Float>> obs;
     Disposable disp;
     
     private boolean terminated;
     
-	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name, long timeout) {
+	public TimeoutGauge(PrometheusFactory factory, String namespace, String subsystem, String name, long timeout, int buffer) {
+		this.buffer = buffer;
 		this.timeout = timeout;
 		this.factory = factory;
 		this.gauge = Gauge.build().namespace(namespace).subsystem(subsystem).name(name)
 				.help("Gauge " + namespace + "_" + subsystem + "_" + name).register(factory.registry);
-		this.publish = PublishSubject.create();
-	    this.obs = publish.distinctUntilChanged().timeout(timeout, TimeUnit.SECONDS, Observable.empty()).onErrorComplete();
+		this.publish = PublishSubject.create();		
+	    this.obs = publish.buffer(this.buffer).timeout(this.timeout, TimeUnit.SECONDS, Observable.empty()).onErrorComplete();
 	    	    
 	    this.disp = obs.subscribe(
 	    		e -> {
-	    			this.gauge.set(e);
-	    			logger.debug(e);
+	    			float sum = 0;
+	    			for(float f : e) sum += f;
+	    			this.gauge.set(sum/buffer);
+	    			//logger.debug(e);
 	    		},
 	    		err -> {
 	    			//System.out.println("err");

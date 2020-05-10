@@ -24,6 +24,10 @@ public class PrometheusSinkConnectorConfig extends AbstractConfig {
 	public static final String PROMETHEUS_DESERIALIZER = "prometheus.deserializer";
 	private static final String PROMETHEUS_DESERIALIZER_DOC = "Class used by JSON.parseObject to produce Java objects from JSON payloads";
 	private static final String PROMETHEUS_DESERIALIZER_DEFAULT = "com.sintef.asam.impl.cam.CAM";
+	
+	public static final String PROMETHEUS_BUFFER = "prometheus.timeout";
+	private static final String PROMETHEUS_BUFFER_DOC = "Size of the buffer on which values are averaged";
+	private static final int PROMETHEUS_BUFFER_DEFAULT = 5;
 
 	public PrometheusSinkConnectorConfig(ConfigDef config, Map<String, String> parsedConfig) {
 		super(config, parsedConfig);
@@ -37,6 +41,7 @@ public class PrometheusSinkConnectorConfig extends AbstractConfig {
 		return new ConfigDef()
 				.define(PROMETHEUS_PORT, Type.INT, PROMETHEUS_PORT_DEFAULT, Importance.HIGH, PROMETHEUS_PORT_DOC)
 				.define(PROMETHEUS_TIMEOUT, Type.INT, PROMETHEUS_TIMEOUT_DEFAULT, Importance.HIGH, PROMETHEUS_TIMEOUT_DOC)
+				.define(PROMETHEUS_BUFFER, Type.INT, PROMETHEUS_BUFFER_DEFAULT, Importance.HIGH, PROMETHEUS_BUFFER_DOC)
 				.define(PROMETHEUS_DESERIALIZER, Type.STRING, PROMETHEUS_DESERIALIZER_DEFAULT, Importance.HIGH, PROMETHEUS_DESERIALIZER_DOC);
 	}
 
@@ -46,6 +51,10 @@ public class PrometheusSinkConnectorConfig extends AbstractConfig {
 	
 	public int getPrometheusTimeout() {
 		return this.getInt(PROMETHEUS_TIMEOUT);
+	}
+	
+	public int getPrometheusBuffer() {
+		return this.getInt(PROMETHEUS_BUFFER);
 	}
 	
 	public String getPrometheusDeserializer() {

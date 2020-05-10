@@ -30,13 +30,13 @@ public class PrometheusService {
 	}
 
 	public PrometheusService(PrometheusSinkConnectorConfig props) throws IOException {
-		this(props.getPrometheusPort()+portOffset, props.getPrometheusTimeout());
+		this(props.getPrometheusPort()+portOffset, props.getPrometheusTimeout(), props.getPrometheusBuffer());
 		portOffset++;		
 	}
 
-	public PrometheusService(int port, int timeout) throws IOException {
+	public PrometheusService(int port, int timeout, int buffer) throws IOException {
 		registry = new CollectorRegistry();
-		factory = new PrometheusFactory(registry, timeout);		
+		factory = new PrometheusFactory(registry, timeout, buffer);		
 		try {
 			server = new HTTPServer(new InetSocketAddress(port), registry, false);
 			logger.info("Starting Prometheus service with HTTP endpoint available on port '{}'", port);
@@ -105,7 +105,7 @@ public class PrometheusService {
 		List<PrometheusService> services = new ArrayList<>();
 		try {				
 			for (int i = 0; i < MAX_SERVICES; i++) {
-				final PrometheusService service = new PrometheusService(8089+i, 10);
+				final PrometheusService service = new PrometheusService(8089+i, 10, 5);
 				services.add(service);
 			}
 									
