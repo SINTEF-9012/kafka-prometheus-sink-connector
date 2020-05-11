@@ -97,9 +97,9 @@ public class PrometheusService {
 
 	// FIXME: write a test
 	public static void main(String args[]) {
-		final int MAX_SERVICES = 5;		
-		final int MAX_PRODUCERS = 20;
-		final long MAX_STATION_ID_PER_PRODUCER = 10000;
+		final int MAX_SERVICES = 10;		
+		final int MAX_PRODUCERS = 30;
+		final long MAX_STATION_ID_PER_PRODUCER = 4000;
 		final int DURATION = 60; //s
 		
 		List<PrometheusService> services = new ArrayList<>();
