@@ -118,9 +118,9 @@ public class Util {
 	public static void main(String args[]) {
 		final int BUFFER = 5;
 		final int TIMEOUT = 10;
-		final int MAX_SERVICES = 5;		
-		final int MAX_PRODUCERS = 20;
-		final long MAX_STATION_ID_PER_PRODUCER = 10000;
+		final int MAX_SERVICES = 10;		
+		final int MAX_PRODUCERS = 30;
+		final long MAX_STATION_ID_PER_PRODUCER = 5000;
 		final int DURATION = 60; //s
 
 		List<PrometheusService> services = new ArrayList<>();
