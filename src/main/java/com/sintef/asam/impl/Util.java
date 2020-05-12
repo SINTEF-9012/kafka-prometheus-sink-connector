@@ -65,10 +65,12 @@ public class Util {
 			isStopped = true;
 
 			System.out.println("Total amount of data scrapped by Prometheus: " + FileUtils.byteCountToDisplaySize(amountData));
-			System.out.println("Sizes of scrapped endpoints:");
+			long sum = 0;
 			for(int s : sizes) {
-				System.out.println("\t" + FileUtils.byteCountToDisplaySize(s));
+				sum += s;
 			}
+			System.out.println("Average size of an endpoint per scrap: "  + FileUtils.byteCountToDisplaySize(sum/sizes.size()));
+			
 		}
 
 		private String GET(String endpoint) {
@@ -179,7 +181,7 @@ public class Util {
 				Thread.sleep(1000);
 			}
 			
-			promThread.join(100);
+			promThread.join(100);			
 
 			throw new Exception("Terminating!");
 		} catch (Exception e) {
