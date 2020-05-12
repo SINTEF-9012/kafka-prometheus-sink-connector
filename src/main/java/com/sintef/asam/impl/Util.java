@@ -16,12 +16,14 @@ public class Util {
 	static final Util UTIL = new Util();
 
 	private class PrometheusMockUp implements Runnable {
-		boolean stopRequested = false;
+		volatile boolean stopRequested = false;
 		boolean isStopped = true;
 
 		List<String> endpoints = new ArrayList<String>();
 		int period = 0;
 		long amountData = 0;
+		
+		List<Integer> sizes = new ArrayList<>();
 
 		public PrometheusMockUp(List<String> endpoints, int period) {
 			this.endpoints = endpoints;
@@ -33,6 +35,7 @@ public class Util {
 			while (!stopRequested) {
 				for(String endpoint : endpoints) {
 					final String result = GET(endpoint);
+					sizes.add(result.length());
 					amountData += result.length();
 				}
 				try {
@@ -62,6 +65,10 @@ public class Util {
 			isStopped = true;
 
 			System.out.println("Total amount of data scrapped by Prometheus: " + FileUtils.byteCountToDisplaySize(amountData));
+			System.out.println("Sizes of scrapped endpoints:");
+			for(int s : sizes) {
+				System.out.println("\t" + FileUtils.byteCountToDisplaySize(s));
+			}
 		}
 
 		private String GET(String endpoint) {
@@ -87,7 +94,7 @@ public class Util {
 
 	private class Producer implements Runnable {
 
-		boolean stopRequested = false;
+		volatile boolean stopRequested = false;
 		long baseID = 0;
 		int count = 0;
 		long range;
@@ -133,14 +140,18 @@ public class Util {
 			}
 
 			final PrometheusMockUp prom = UTIL.new PrometheusMockUp(endpoints, BUFFER);
-			new Thread(prom).start();
+			final Thread promThread = new Thread(prom);
+			promThread.start();
 
 			final List<Producer> producers = new ArrayList<>();
+			final List<Thread> producerThreads = new ArrayList<Thread>();
 			for (int i = 0; i < MAX_PRODUCERS; i++) {
 				final PrometheusService service = services.get(i%MAX_SERVICES);
 				final Producer p = UTIL.new Producer(MAX_STATION_ID_PER_PRODUCER * i, MAX_STATION_ID_PER_PRODUCER, service);
 				producers.add(p);
-				new Thread(p).start();
+				final Thread t = new Thread(p);
+				producerThreads.add(t);
+				t.start();
 			}
 
 			Thread.sleep(DURATION * 1000);
@@ -150,6 +161,10 @@ public class Util {
 			}
 
 			Thread.sleep(5000);
+			
+			for(Thread prod : producerThreads) {
+				prod.join(100);
+			}
 
 			long sum = 0;
 			for(Producer p : producers) {
@@ -163,6 +178,8 @@ public class Util {
 				System.out.println("Waiting...");
 				Thread.sleep(1000);
 			}
+			
+			promThread.join(100);
 
 			throw new Exception("Terminating!");
 		} catch (Exception e) {
