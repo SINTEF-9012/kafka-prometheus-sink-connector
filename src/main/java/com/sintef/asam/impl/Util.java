@@ -35,7 +35,7 @@ public class Util {
 			while (!stopRequested) {
 				for(String endpoint : endpoints) {
 					final String result = GET(endpoint);
-					sizes.add(result.length());
+					if(result.length()>0) sizes.add(result.length());
 					amountData += result.length();
 				}
 				try {
@@ -50,6 +50,7 @@ public class Util {
 				amountDataSinceStopRequested = 0;
 				for(String endpoint : endpoints) {
 					final String result = GET(endpoint);
+					if(result.length()>0) sizes.add(result.length());
 					amountData += result.length();
 					amountDataSinceStopRequested += result.length();										
 				}
@@ -69,7 +70,7 @@ public class Util {
 			for(int s : sizes) {
 				sum += s;
 			}
-			System.out.println("Average size of an endpoint per scrap: "  + FileUtils.byteCountToDisplaySize(sum/sizes.size()));
+			System.out.println("#scraps: " + sizes.size() + "Average size of an endpoint per scrap: "  + FileUtils.byteCountToDisplaySize(sum/sizes.size()));
 			
 		}
 

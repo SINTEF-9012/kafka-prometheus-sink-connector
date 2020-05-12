@@ -25,7 +25,7 @@ public class PrometheusSinkConnectorConfig extends AbstractConfig {
 	private static final String PROMETHEUS_DESERIALIZER_DOC = "Class used by JSON.parseObject to produce Java objects from JSON payloads";
 	private static final String PROMETHEUS_DESERIALIZER_DEFAULT = "com.sintef.asam.impl.cam.CAM";
 	
-	public static final String PROMETHEUS_BUFFER = "prometheus.timeout";
+	public static final String PROMETHEUS_BUFFER = "prometheus.buffer";
 	private static final String PROMETHEUS_BUFFER_DOC = "Size of the buffer on which values are averaged";
 	private static final int PROMETHEUS_BUFFER_DEFAULT = 5;
 
