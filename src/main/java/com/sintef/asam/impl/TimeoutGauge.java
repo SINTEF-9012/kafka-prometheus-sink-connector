@@ -58,7 +58,9 @@ public class TimeoutGauge {
 	private void terminate(String namespace, String subsystem, String name) {
 		terminated = true;	    			
 		this.factory.removeGauge(namespace, subsystem, name);
-		//this.timeoutDisp.dispose();
+		this.disp.dispose();
+		this.publish.onTerminateDetach();
+		this.obs.onTerminateDetach();
 		logger.info("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
 		//System.out.println("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
 	}
