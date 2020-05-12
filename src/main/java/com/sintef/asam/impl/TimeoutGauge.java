@@ -35,7 +35,7 @@ public class TimeoutGauge {
 		this.gauge = Gauge.build().namespace(namespace).subsystem(subsystem).name(name)
 				.help("Gauge " + namespace + "_" + subsystem + "_" + name).register(factory.registry);
 		this.publish = PublishSubject.create();		
-	    this.obs = publish.buffer(this.buffer).timeout(this.timeout, TimeUnit.SECONDS, Observable.empty()).onErrorComplete();
+	    this.obs = publish.buffer(this.buffer).timeout(this.timeout, TimeUnit.SECONDS, Observable.empty()).onErrorComplete().onTerminateDetach();
 	    	    
 	    this.disp = obs.subscribe(
 	    		e -> {
@@ -58,9 +58,7 @@ public class TimeoutGauge {
 	private void terminate(String namespace, String subsystem, String name) {
 		terminated = true;	    			
 		this.factory.removeGauge(namespace, subsystem, name);
-		this.disp.dispose();
-		this.publish.onTerminateDetach();
-		this.obs.onTerminateDetach();
+		this.disp.dispose();		
 		logger.info("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
 		//System.out.println("Timeout: Cleaning gauge " + namespace + "_" + subsystem + "_" + name);
 	}

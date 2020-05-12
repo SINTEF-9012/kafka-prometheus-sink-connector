@@ -11,7 +11,6 @@ import com.sintef.asam.PrometheusSinkConnectorConfig;
 
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class PrometheusService {
 	private static final Logger logger = LogManager.getLogger(PrometheusService.class);
@@ -55,7 +54,7 @@ public class PrometheusService {
 
 	public void stop() {
 		factory.clean();
-		Schedulers.shutdown();
+		//Schedulers.shutdown();
 		factory = null;
 		if (server != null) {
 			logger.warn("STOPPING prometheus HTTP endpoint on port '{}'", server.getPort());
