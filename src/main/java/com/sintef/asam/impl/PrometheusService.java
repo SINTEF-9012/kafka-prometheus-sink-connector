@@ -53,14 +53,14 @@ public class PrometheusService {
 	}
 
 	public void stop() {
-		factory.clean();
+		//factory.clean();
 		//Schedulers.shutdown();
-		factory = null;
+		//factory = null;
 		if (server != null) {
 			logger.warn("STOPPING prometheus HTTP endpoint on port '{}'", server.getPort());
 			System.err.println("STOPPING prometheus HTTP endpoint on port " + server.getPort());
 			server.stop();
-			server = null;
+			//server = null;
 		}
 	}
 }

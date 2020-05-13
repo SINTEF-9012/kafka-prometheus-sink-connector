@@ -27,7 +27,7 @@ public class PrometheusFactory {
 	public void clean() {
 		synchronized (gauges) {
 			for(TimeoutGauge gauge : gauges.values()) {
-				gauge.gauge.clear();
+				//gauge.gauge.clear();
 				registry.unregister(gauge.gauge);
 			}
 		}				

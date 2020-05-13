@@ -10,11 +10,37 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import com.sintef.asam.impl.cam.CAM;
 
 public class Util {
-	static final Util UTIL = new Util();
+	
+	@Parameter(names = {"--buffer", "-b"}, description = "Size of the averaging buffer")
+	int BUFFER = 5;
+	
+	@Parameter(names = {"--timeout", "-t"}, description = "Time after which metrics should be (temporarily) discarded")
+	int TIMEOUT = 10;
+	
+	@Parameter(names = {"--consumer", "-c"}, description = "How many consumers to run in the simulation")
+	int MAX_SERVICES = 10;
+	
+	@Parameter(names = {"--producer", "-p"}, description = "How many producers to run in the simulation")
+	int MAX_PRODUCERS = 30;
+	
+	@Parameter(names = {"--station-id", "-sid"}, description = "How many station IDs per producer")
+	long MAX_STATION_ID_PER_PRODUCER = 5000;
+	
+	@Parameter(names = {"--duration", "-d"}, description = "Duration (in s) of the simulation")
+	int DURATION = 60; //s
+	
+	@Parameter(names = {"--port"}, description = "Port of the (first) endpoint")
+	int PORT = 8089; //s
 
+	@Parameter(names = {"--help", "-h"}, help = true)
+	private boolean help = false;
+
+	
 	private class PrometheusMockUp implements Runnable {
 		volatile boolean stopRequested = false;
 		boolean isStopped = true;
@@ -70,7 +96,8 @@ public class Util {
 			for(int s : sizes) {
 				sum += s;
 			}
-			System.out.println("#scraps: " + sizes.size() + "Average size of an endpoint per scrap: "  + FileUtils.byteCountToDisplaySize(sum/sizes.size()));
+			System.out.println("#scraps: " + sizes.size());
+			System.out.println("Average size of an endpoint per scrap: "  + FileUtils.byteCountToDisplaySize(sum/sizes.size()));
 			
 		}
 
@@ -114,10 +141,17 @@ public class Util {
 
 			while (!stopRequested) {
 				final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":"
-						+ (baseID + (count % range)) + "}," + "\"cam\":{" + "\"speedValue\":" + (count % 80) + ","
-						+ "\"headingValue\":" + (count % 50) + "}" + "}";
+						+ (baseID + (count % range)) + "}," + "\"cam\":{" + "\"speedValue\":" + (80 - (count % 10) + Math.random()*10) + ","
+						+ "\"headingValue\":" + (50 - (count % 10) + Math.random()*10) + "}" + "}";
 				service.process("cam", json, CAM.class);
-				count++;				 
+				count++;
+				if (count % range == 0) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
 			}
 
 		}
@@ -126,23 +160,34 @@ public class Util {
 
 	// FIXME: write a test
 	public static void main(String args[]) {
-		final int BUFFER = 5;
-		final int TIMEOUT = 10;
-		final int MAX_SERVICES = 10;		
-		final int MAX_PRODUCERS = 30;
-		final long MAX_STATION_ID_PER_PRODUCER = 5000;
-		final int DURATION = 60; //s
-
+		Util cli = new Util();
+		
+		final JCommander jcom = JCommander.newBuilder().addObject(cli).build();
+		jcom.parse(args);
+		
+		if (cli.help) {
+			//printUsage(jcom);
+			System.exit(0);
+		}
+		
+		final int BUFFER = cli.BUFFER;
+		final int TIMEOUT = cli.TIMEOUT;
+		final int MAX_SERVICES = cli.MAX_SERVICES;		
+		final int MAX_PRODUCERS = cli.MAX_PRODUCERS;
+		final long MAX_STATION_ID_PER_PRODUCER = cli.MAX_STATION_ID_PER_PRODUCER;
+		final int DURATION = cli.DURATION; //s
+		final int PORT = cli.PORT;
+		
 		List<PrometheusService> services = new ArrayList<>();
 		try {	
 			List<String> endpoints = new ArrayList<String>();
 			for (int i = 0; i < MAX_SERVICES; i++) {
-				final PrometheusService service = new PrometheusService(8089+i, TIMEOUT, BUFFER);
+				final PrometheusService service = new PrometheusService(PORT+i, TIMEOUT, BUFFER);
 				services.add(service);
 				endpoints.add("localhost:" + service.port);
 			}
 
-			final PrometheusMockUp prom = UTIL.new PrometheusMockUp(endpoints, BUFFER);
+			final PrometheusMockUp prom = cli.new PrometheusMockUp(endpoints, BUFFER);
 			final Thread promThread = new Thread(prom);
 			promThread.start();
 
@@ -150,11 +195,12 @@ public class Util {
 			final List<Thread> producerThreads = new ArrayList<Thread>();
 			for (int i = 0; i < MAX_PRODUCERS; i++) {
 				final PrometheusService service = services.get(i%MAX_SERVICES);
-				final Producer p = UTIL.new Producer(MAX_STATION_ID_PER_PRODUCER * i, MAX_STATION_ID_PER_PRODUCER, service);
+				final Producer p = cli.new Producer(MAX_STATION_ID_PER_PRODUCER * i, MAX_STATION_ID_PER_PRODUCER, service);
 				producers.add(p);
 				final Thread t = new Thread(p);
 				producerThreads.add(t);
 				t.start();
+				Thread.sleep(25);
 			}
 
 			Thread.sleep(DURATION * 1000);
