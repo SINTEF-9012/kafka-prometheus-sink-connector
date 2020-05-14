@@ -33,6 +33,15 @@ func (t Target) isValid() bool {
   return true
 }
 
+func get(conf string) string {
+  b, err := ioutil.ReadFile(conf)
+  if err != nil {
+    return ""
+  }
+  content := string(b)
+  return content
+}
+
 func (t Target) remove(conf string) (removed bool, e error) {
   targetAsString := t.toString()
   b, err := ioutil.ReadFile(conf)
@@ -42,40 +51,33 @@ func (t Target) remove(conf string) (removed bool, e error) {
   content := string(b)
   if strings.Contains(content, targetAsString) {
     content = strings.ReplaceAll(content, t.toString(), "")
-    f, err := os.OpenFile(conf, os.O_WRONLY, 0644)
-    if err != nil {
-      return false, err
-    }
-    defer f.Close()
-    if _, err := f.WriteString(content); err != nil {
-      return false, err
-    } else {
-      return true, err
+    err := ioutil.WriteFile(conf, []byte(content), 0644)
+	  if err != nil {
+		  return false, err
+	  } else {
+      return true, nil
     }
   } else {
     return false, nil
   }
-
 }
 
 func (t Target) add(conf string) (added bool, e error) {
   targetAsString := t.toString()
   b, err := ioutil.ReadFile(conf)
-  if err != nil {
-    return false, err
-  }
-
-  content := string(b)
-  if strings.Contains(content, targetAsString) {
-    return false, nil
+  if err == nil {
+    content := string(b)
+    if strings.Contains(content, targetAsString) {
+      return false, nil
+    }
   }
 
   f, err := os.OpenFile(conf, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
   if err != nil {
     return false, err
   }
-
   defer f.Close()
+
   if _, err := f.WriteString(targetAsString+"\n"); err != nil {
     return false, err
   } else {
@@ -107,8 +109,7 @@ func main() {
         }
       }
       return
-    }
-    if r.Method == http.MethodDelete {
+    } else if r.Method == http.MethodDelete {
       t, parseErr := parse(r)
       if parseErr == nil && t.isValid() {
         removed, rmErr := t.remove("targets.json")
@@ -121,9 +122,10 @@ func main() {
         }
       }
       return
+    } else {
+      fmt.Fprintf(w, "%s", get("targets.json"))
+      return
     }
-    fmt.Fprintf(w, "Method %s not allowed!", r.Method)
-    return
   })
 
   log.Fatal(http.ListenAndServe(":8080", nil))
