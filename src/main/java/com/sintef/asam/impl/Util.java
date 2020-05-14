@@ -17,10 +17,10 @@ import com.sintef.asam.impl.cam.CAM;
 public class Util {
 	
 	@Parameter(names = {"--buffer", "-b"}, description = "Size of the averaging buffer")
-	int BUFFER = 5;
+	int BUFFER = 10;
 	
 	@Parameter(names = {"--timeout", "-t"}, description = "Time after which metrics should be (temporarily) discarded")
-	int TIMEOUT = 10;
+	int TIMEOUT = 30;
 	
 	@Parameter(names = {"--consumer", "-c"}, description = "How many consumers to run in the simulation")
 	int MAX_SERVICES = 10;
@@ -182,7 +182,7 @@ public class Util {
 		try {	
 			List<String> endpoints = new ArrayList<String>();
 			for (int i = 0; i < MAX_SERVICES; i++) {
-				final PrometheusService service = new PrometheusService(PORT+i, TIMEOUT, BUFFER);
+				final PrometheusService service = new PrometheusService(PORT+i, TIMEOUT, BUFFER, "192.168.99.100:8080");
 				services.add(service);
 				endpoints.add("localhost:" + service.port);
 			}

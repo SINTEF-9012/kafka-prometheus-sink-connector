@@ -30,7 +30,7 @@ public class PrometheusSinkConnectorTask extends SinkTask {
 	public void start(Map<String, String> map) {
 		final PrometheusSinkConnectorConfig cfg = new PrometheusSinkConnectorConfig(map);
 		try {			
-			deserializer = Class.forName(cfg.getPrometheusDeserializer());
+			deserializer = Class.forName(cfg.getDeserializer());
 			service = new PrometheusService(cfg);
 		} catch (IOException e) {
 			final String err = "Could not start Prometheus service: " + e.getMessage();
@@ -38,7 +38,7 @@ public class PrometheusSinkConnectorTask extends SinkTask {
 			logger.error(err);
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			final String err = "Could not load deserializer class " + cfg.getPrometheusDeserializer() + ": " + e.getMessage();
+			final String err = "Could not load deserializer class " + cfg.getDeserializer() + ": " + e.getMessage();
 			System.err.println(err);
 			logger.error(err);
 			e.printStackTrace();

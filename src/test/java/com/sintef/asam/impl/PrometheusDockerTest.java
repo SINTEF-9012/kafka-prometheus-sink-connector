@@ -82,9 +82,9 @@ public class PrometheusDockerTest {
 			FileUtils.copyDirectoryToDirectory(dockerDir, tempDir);
 
 			if (isWindows) {
-				runCommand("cmd.exe", "/c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8089 && docker ps");
+				runCommand("cmd.exe", "/c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 8080:8080 -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8089 && docker ps");
 			} else {
-				runCommand("sh", "-c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8089 && docker ps");//Maybe?
+				runCommand("sh", "-c", "docker build -t kafkaprom/prometheus . && docker run --name kafkapromtest -d -p 8080:8080 -p 9090:9090 kafkaprom/prometheus 1s " + localIP + ":8089 && docker ps");//Maybe?
 			}
 
 		} catch (URISyntaxException | IOException e) {
@@ -126,7 +126,14 @@ public class PrometheusDockerTest {
 		try {
 			final String json = "{\"header\":{" + "\"protocolVersion\":1," + "\"messageID\":2," + "\"stationID\":0}," + "\"cam\":{" + "\"speedValue\":%s,"
 					+ "\"headingValue\":%s}" + "}";
-			final PrometheusService service = new PrometheusService(8089, 5, 1);
+			
+			String address = "127.0.0.1";
+			if (isWindows) {
+				String tempAddress = runCommand("cmd.exe", "/c", "docker-machine ip default");
+				if (tempAddress.split("\\.").length == 4) address = tempAddress; //most likely an IP...
+			} 
+			
+			final PrometheusService service = new PrometheusService(8089, 5, 1, address + ":8080");
 			Thread.sleep(5000);		
 			
 			final long start = System.currentTimeMillis();

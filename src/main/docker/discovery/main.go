@@ -81,6 +81,7 @@ func parse(r *http.Request) (address string, job string, e error) {
 
 func main() {
   http.HandleFunc("/targets", func(w http.ResponseWriter, r *http.Request) {
+    fmt.Println("received " + http.MethodPost + " request on /targets")
     if r.Method == http.MethodPost || r.Method == http.MethodPut {
       address, job, parseErr := parse(r)
       if parseErr == nil {//FIXME: sanity check on t
